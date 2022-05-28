@@ -1,13 +1,20 @@
 <?php
 
+//クリックジャッキングの対策。header関数でHTTPヘッダーにページをフレーム内に表示できないような設定を送っています。
+header("X-FRAME-OPTIONS: DENY");
+
 // スーパーグローバル変数 php9種類あり
 // 連想配列
-if(!empty($_POST)) {
-  echo "<pre>";
-  var_dump($_POST);
-  echo "</pre>";
-}
+// if(!empty($_POST)) {
+//   echo "<pre>";
+//   var_dump($_POST);
+//   echo "</pre>";
+// }
 
+// XSS対策 サニタイズ
+function h($str) {
+  return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
+}
 // formは、入力、確認、完了をinput.php,confirm.php,thanks.phpで分けられることがある。
 
 // 今回は一つのファイルで、if文を使用しformを作成する。
@@ -27,14 +34,14 @@ if(!empty($_POST['btn_submit'])) {
 
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>フォーム作成</title>
-</head>
-<body>
-
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>フォーム作成</title>
+  </head>
+  <body>
+    
   <!-- 入力画面--------------------------- -->
   <?php if($pageFlag === 0) : ?>
     
@@ -42,11 +49,11 @@ if(!empty($_POST['btn_submit'])) {
     <!-- 送信するとURLの後に?~~~になる。query(クエリ) -->
     <form method="POST" action="input.php">
       氏名
-      <input type="text" name="your_name" value="<?php if(!empty($_POST['your_name'])){echo $_POST['your_name'];} ?>">
+      <input type="text" name="your_name" value="<?php if(!empty($_POST['your_name'])){echo h($_POST['your_name']);} ?>">
       <br>
       
       メールアドレス
-      <input type="email" name="email" value="<?php if(!empty($_POST['email'])){echo $_POST['email'];} ?>" >
+      <input type="email" name="email" value="<?php if(!empty($_POST['email'])){echo h($_POST['email']);} ?>" >
       
       <br>
       
@@ -60,19 +67,19 @@ if(!empty($_POST['btn_submit'])) {
     <?php if($pageFlag === 1) : ?>
       <form method="POST" action="input.php">
         氏名
-        <?php echo $_POST["your_name"];?>
+        <?php echo h($_POST["your_name"]);?>
         <br>
         
         メールアドレス
-        <?php echo $_POST["email"];?>
+        <?php echo h($_POST["email"]);?>
         
         <br>
         
         <input type="submit" name="back" value="戻る">
         <input type="submit" name="btn_submit" value="送信する">
         <!-- GET,POSTなどの通信を行うとvalue内容が消える -->
-        <input type="hidden" name="your_name" value="<?php echo $_POST['your_name']; ?>">
-        <input type="hidden" name="email" value="<?php echo $_POST['email']; ?>">
+        <input type="hidden" name="your_name" value="<?php echo h($_POST['your_name']); ?>">
+        <input type="hidden" name="email" value="<?php echo h($_POST['email']); ?>">
       </form>
       <?php endif; ?>
 
