@@ -2,6 +2,8 @@
 
 session_start();
 
+require 'validation.php';
+
 //クリックジャッキングの対策。header関数でHTTPヘッダーにページをフレーム内に表示できないような設定を送っています。
 header("X-FRAME-OPTIONS: DENY");
 
@@ -23,8 +25,9 @@ function h($str) {
 
 // 0なら入力,1なら確認、2なら完了で切り替える。
 $pageFlag = 0;
+$errors = validation($_POST);
 
-if(!empty($_POST['btn_confirm'])) {
+if(!empty($_POST['btn_confirm'] && empty($errors))) {
   $pageFlag = 1;
 }
 
@@ -54,6 +57,16 @@ if(!empty($_POST['btn_submit'])) {
       }
       $token = $_SESSION['csrfToken'];
     ?>
+
+    <?php if(!empty($errors) && !empty($_POST['btn_confirm'])): ?>
+      <?php echo '<ul>'; ?>
+      <?php 
+        foreach($errors as $error) {
+          echo '<li>' . $error . '</li>';
+        }
+      ?>
+      <?php echo '</ul>'; ?>
+    <?php endif; ?>
     
     <!-- methodはGETかPOST actionは処理するファイル名 -->
     <!-- 送信するとURLの後に?~~~になる。query(クエリ) -->
