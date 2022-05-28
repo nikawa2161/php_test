@@ -1,15 +1,17 @@
 <?php
 
+session_start();
+
 //クリックジャッキングの対策。header関数でHTTPヘッダーにページをフレーム内に表示できないような設定を送っています。
 header("X-FRAME-OPTIONS: DENY");
 
 // スーパーグローバル変数 php9種類あり
 // 連想配列
-// if(!empty($_POST)) {
-//   echo "<pre>";
-//   var_dump($_POST);
-//   echo "</pre>";
-// }
+if(!empty($_SESSION)) {
+  echo "<pre>";
+  var_dump($_SESSION);
+  echo "</pre>";
+}
 
 // XSS対策 サニタイズ
 function h($str) {
@@ -44,6 +46,14 @@ if(!empty($_POST['btn_submit'])) {
     
   <!-- 入力画面--------------------------- -->
   <?php if($pageFlag === 0) : ?>
+    <!-- ランダムなバイト列を生成。トークン -->
+    <?php 
+      if(!isset($_SESSION['csrfToken'])) {
+        $csrfToken = bin2hex(random_bytes(32)); 
+        $_SESSION['csrfToken'] = $csrfToken;
+      }
+      $token = $_SESSION['csrfToken'];
+    ?>
     
     <!-- methodはGETかPOST actionは処理するファイル名 -->
     <!-- 送信するとURLの後に?~~~になる。query(クエリ) -->
@@ -58,6 +68,7 @@ if(!empty($_POST['btn_submit'])) {
       <br>
       
       <input type="submit" name="btn_confirm" value="確認する">
+      <input type="hidden" name="csrf" value="<?php echo $token; ?>">
       
     </form>
     <?php endif; ?>
@@ -65,27 +76,34 @@ if(!empty($_POST['btn_submit'])) {
 
     <!-- 確認画面--------------------------- -->
     <?php if($pageFlag === 1) : ?>
-      <form method="POST" action="input.php">
-        氏名
-        <?php echo h($_POST["your_name"]);?>
-        <br>
-        
-        メールアドレス
-        <?php echo h($_POST["email"]);?>
-        
-        <br>
-        
-        <input type="submit" name="back" value="戻る">
-        <input type="submit" name="btn_submit" value="送信する">
-        <!-- GET,POSTなどの通信を行うとvalue内容が消える -->
-        <input type="hidden" name="your_name" value="<?php echo h($_POST['your_name']); ?>">
-        <input type="hidden" name="email" value="<?php echo h($_POST['email']); ?>">
-      </form>
+      <?php if($_POST['csrf'] === $_SESSION['csrfToken']): ?>
+        <form method="POST" action="input.php">
+          氏名
+          <?php echo h($_POST["your_name"]);?>
+          <br>
+          
+          メールアドレス
+          <?php echo h($_POST["email"]);?>
+          
+          <br>
+          
+          <input type="submit" name="back" value="戻る">
+          <input type="submit" name="btn_submit" value="送信する">
+          <!-- GET,POSTなどの通信を行うとvalue内容が消える -->
+          <input type="hidden" name="your_name" value="<?php echo h($_POST['your_name']); ?>">
+          <input type="hidden" name="email" value="<?php echo h($_POST['email']); ?>">
+          <input type="hidden" name="csrf" value="<?php echo h($_POST['csrf']); ?>">
+        </form>
       <?php endif; ?>
+    <?php endif; ?>
 
     <!-- 完了画面------------------------- -->
     <?php if($pageFlag === 2) : ?>
-      送信が完了しました。
+      <?php if($_POST['csrf'] === $_SESSION['csrfToken']): ?>
+        送信が完了しました。
+
+        <?php unset($_SESSION['csrfToken']); ?>
+      <?php endif; ?>
     <?php endif; ?>
   
 </body>
